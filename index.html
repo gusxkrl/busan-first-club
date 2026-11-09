@@ -14,4 +14,65 @@ const oldRender=render;render=function(){oldRender();const m=current();const pho
 const oldDetail=detail;detail=function(id){oldDetail(id);const m=state.members.find(x=>x.id===id);const target=document.getElementById('detailContent');const d=document.createElement('p');d.textContent='연락처: '+contactFor(m);target.appendChild(d);const change=document.createElement('p');change.textContent='전월 대비: '+signedChange(m);target.appendChild(change);};
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 render();
-</script></body></html>
+</script>
+<div id="resetBox" style="display:none;position:fixed;inset:0;background:#f2f5fa;z-index:9999;overflow:auto;padding:30px 16px">
+  <div style="max-width:420px;margin:60px auto;background:white;padding:24px;border-radius:16px">
+    <h2>🎳 부산 퍼스트클럽</h2>
+    <h3>새 비밀번호 설정</h3>
+    <p>새 비밀번호를 입력해 주세요.</p>
+    <input id="newPassword" type="password"
+      placeholder="새 비밀번호 (8자 이상)">
+    <button id="resetSubmit" style="width:100%">
+      비밀번호 변경
+    </button>
+    <p id="resetMessage"></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const query = new URLSearchParams(location.search);
+
+  if (hash.get('type') !== 'recovery' &&
+      query.get('code') === null) return;
+
+  const box = document.getElementById('resetBox');
+  const msg = document.getElementById('resetMessage');
+  box.style.display = 'block';
+
+  const url = '여기에_SUPABASE_PROJECT_URL';
+  const key = '여기에_SUPABASE_PUBLISHABLE_KEY';
+
+  if (url.startsWith('여기에_') || key.startsWith('여기에_')) {
+    msg.textContent = 'Supabase 연결 설정이 필요합니다.';
+    return;
+  }
+
+  const client = window.supabase.createClient(url, key);
+
+  const code = query.get('code');
+  if (code) {
+    const { error } = await client.auth.exchangeCodeForSession(code);
+    if (error) {
+      msg.textContent = '복구 링크가 만료되었거나 유효하지 않습니다.';
+      return;
+    }
+  }
+
+  document.getElementById('resetSubmit').onclick = async () => {
+    const password = document.getElementById('newPassword').value;
+    if (password.length < 8) {
+      msg.textContent = '비밀번호는 8자 이상 입력해 주세요.';
+      return;
+    }
+
+    const { error } = await client.auth.updateUser({ password });
+    msg.textContent = error
+      ? '변경 실패: ' + error.message
+      : '비밀번호가 변경되었습니다.';
+  };
+})();
+</script>
+</body></html>
