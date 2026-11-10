@@ -59,7 +59,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.
 <script>
 // 공개 가능한 Publishable key만 입력하세요. Secret/service_role 키는 절대 넣지 마세요.
 const SUPABASE_URL='https://vgcxhwrnedmzlmbzjext.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='여기에_PUBLISHABLE_KEY_붙여넣기';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_gNdMi8-eDPjfCrq1-txE6A_DMZxH6KJ';
 (async function(){
  const hash=new URLSearchParams(location.hash.slice(1));const query=new URLSearchParams(location.search);
  const isRecovery=hash.get('type')==='recovery'||query.has('code');
