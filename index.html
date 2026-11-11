@@ -94,7 +94,7 @@ async function changeAdminRole(id,makeAdmin){if(!me?.is_superadmin)return alert(
 async function resetMemberPassword(){if(!me?.is_superadmin)return alert('최고관리자 전용입니다.');const id=$('resetMember').value,pw=$('resetNewPassword').value;if(!id||!/^[0-9]{8}$/.test(pw))return alert('회원과 숫자 8자리 임시 비밀번호를 확인하세요.');if(!confirm('선택한 회원의 비밀번호를 초기화할까요?'))return;const {data:sessionData}=await db.auth.getSession();const token=sessionData?.session?.access_token;if(!token)return alert('다시 로그인해 주세요.');try{const res=await fetch(SUPABASE_URL+'/functions/v1/club-reset-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':KEY},body:JSON.stringify({member_id:id,new_password:pw})});const result=await res.json();if(!res.ok)return alert(result.message||'초기화 실패');$('resetNewPassword').value='';alert('초기화 완료! 회원에게 숫자 8자리 임시 비밀번호를 전달하고 로그인 후 즉시 변경하도록 안내하세요.')}catch(e){alert('서버 연결 실패: '+e.message)}}
 async function deleteClubMember(id,self=false){
  if(!me||(!self&&!me.is_superadmin)||self&&id!==me.id)return alert('권한이 없습니다.');
- const target=members.find(m=>m.id===id);if(!target)return alert('회원 정보를 찾을 수 없습니다.');
+ const {data:target,error:lookupError}=await db.from('club_members').select('id,name,is_superadmin').eq('id',id).maybeSingle();if(lookupError)return alert('회원 조회 실패: '+lookupError.message);if(!target)return alert('해당 회원이 이미 삭제됐거나 조회 권한이 없습니다. 새로고침 후 확인해 주세요.');
  if(!self&&target.is_superadmin)return alert('최고관리자는 강퇴할 수 없습니다.');
  const action=self?'탈퇴':'강퇴';
  if(!confirm(target.name+' 회원을 '+action+'할까요?\n계정과 모든 점수 기록이 영구 삭제됩니다.'))return;
