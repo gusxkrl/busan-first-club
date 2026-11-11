@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>부산 퍼스트클럽</title><meta name="theme-color" content="#102b55"><style>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta name="viewport" content="width=device-width,initial-scale=1"><title>부산 퍼스트클럽 · 강퇴수정 11.11</title><meta name="theme-color" content="#102b55"><style>
 :root{font-family:system-ui,'Noto Sans KR',sans-serif;color:#162b48;background:#f2f5fa}*{box-sizing:border-box}body{margin:0}header{background:#102b55;color:white;padding:24px 18px;border-radius:0 0 22px 22px}header>div,main{max-width:590px;margin:auto}h1{font-size:25px;margin:5px 0}h2{font-size:18px;margin:0 0 14px}.wrap{padding:16px 14px 80px}.card{background:#fff;padding:18px;border-radius:16px;margin:12px 0;box-shadow:0 3px 15px #102b5514}input,button,select{font:inherit}input,select{width:100%;padding:12px;border:1px solid #cbd6e6;border-radius:10px;margin:6px 0 13px}button{border:0;border-radius:10px;background:#175bb8;color:#fff;padding:12px;cursor:pointer}button:disabled{opacity:.45}button.alt{background:#e9eff9;color:#193c6d}label{font-size:13px;font-weight:700}.muted{font-size:13px;color:#68758a}.notice{padding:13px;background:#fff3d6;border-radius:12px;font-size:13px;white-space:pre-wrap}.error{color:#b42318;white-space:pre-wrap;font-size:13px}.row{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 0;border-bottom:1px solid #edf0f5}.row:last-child{border:0}.row button{white-space:nowrap}.tabs{display:flex;gap:5px;overflow-x:auto;margin:15px 0}.tabs button{white-space:nowrap;font-size:12px;flex:1;padding:11px 7px}.tabs button.active{background:#102b55}section{display:none}section.active{display:block}.flex{display:flex;gap:8px}.flex>*{flex:1;min-width:0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#edf4fd;text-align:center;padding:12px 4px;border-radius:12px}.stat strong{display:block;font-size:19px}.rank{display:grid;grid-template-columns:1.6fr repeat(5,1fr);gap:3px;font-size:12px;padding:12px 0;border-bottom:1px solid #edf0f5;text-align:center}.rank span:first-child{text-align:left}details{margin-top:15px}summary{font-weight:700;cursor:pointer}[hidden]{display:none!important}
 
 .member-name{border:0;background:none;color:#1755a1;font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0;text-align:left}
@@ -93,15 +93,23 @@ async function adminScore(id,eid){if(!isAdmin())return;const old=scores.find(s=>
 async function changeAdminRole(id,makeAdmin){if(!me?.is_superadmin)return alert('최고관리자 전용입니다.');const target=members.find(m=>m.id===id);if(!target)return;const action=makeAdmin?'관리자로 지정':'관리자 권한 해제';if(!confirm(target.name+' 회원을 '+action+'할까요?'))return;const r=await db.rpc('set_club_admin',{target_member:id,make_admin:makeAdmin});if(r.error)return alert('변경 실패: '+r.error.message);await refresh();alert('변경 완료')}
 async function resetMemberPassword(){if(!me?.is_superadmin)return alert('최고관리자 전용입니다.');const id=$('resetMember').value,pw=$('resetNewPassword').value;if(!id||!/^[0-9]{8}$/.test(pw))return alert('회원과 숫자 8자리 임시 비밀번호를 확인하세요.');if(!confirm('선택한 회원의 비밀번호를 초기화할까요?'))return;const {data:sessionData}=await db.auth.getSession();const token=sessionData?.session?.access_token;if(!token)return alert('다시 로그인해 주세요.');try{const res=await fetch(SUPABASE_URL+'/functions/v1/club-reset-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':KEY},body:JSON.stringify({member_id:id,new_password:pw})});const result=await res.json();if(!res.ok)return alert(result.message||'초기화 실패');$('resetNewPassword').value='';alert('초기화 완료! 회원에게 숫자 8자리 임시 비밀번호를 전달하고 로그인 후 즉시 변경하도록 안내하세요.')}catch(e){alert('서버 연결 실패: '+e.message)}}
 async function deleteClubMember(id,self=false){
- if(!me||(!self&&!me.is_superadmin)||self&&id!==me.id)return alert('권한이 없습니다.');
- const {data:target,error:lookupError}=await db.from('club_members').select('id,name,is_superadmin').eq('id',id).maybeSingle();if(lookupError)return alert('회원 조회 실패: '+lookupError.message);if(!target)return alert('해당 회원이 이미 삭제됐거나 조회 권한이 없습니다. 새로고침 후 확인해 주세요.');
- if(!self&&target.is_superadmin)return alert('최고관리자는 강퇴할 수 없습니다.');
+ if(!me||(!self&&!me.is_superadmin)||(self&&id!==me.id))return alert('권한이 없습니다.');
+ const target=members.find(m=>String(m.id)===String(id));
  const action=self?'탈퇴':'강퇴';
- if(!confirm(target.name+' 회원을 '+action+'할까요?\n계정과 모든 점수 기록이 영구 삭제됩니다.'))return;
- const answer=prompt('삭제를 확정하려면 아래에 \"'+action+'\"를 입력하세요.');if(answer!==action)return;
- const {data:sessionData}=await db.auth.getSession();const token=sessionData?.session?.access_token;
- if(!token)return alert('다시 로그인해 주세요.');
- try{const res=await fetch(SUPABASE_URL+'/functions/v1/club-delete-member',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':KEY},body:JSON.stringify({member_id:id})});const data=await res.json();if(!res.ok)return alert(data.message||action+' 실패');if(self){await db.auth.signOut();await refresh();switchTab('ranking')}else{await refresh()}alert(action+' 완료. 계정과 모든 점수 기록이 삭제됐습니다.')}catch(e){alert('처리 실패: '+e.message)}
+ const displayName=target?.name||'선택한 회원';
+ if(!confirm(displayName+' 회원을 '+action+'할까요?\n계정과 모든 점수 기록이 영구 삭제됩니다.'))return;
+ const answer=prompt('삭제를 확정하려면 아래에 "'+action+'"를 입력하세요.');if(answer!==action)return;
+ const {data:sessionData,error:sessionError}=await db.auth.getSession();
+ if(sessionError||!sessionData?.session?.access_token)return alert('로그인이 만료됐습니다. 다시 로그인해 주세요.');
+ try{
+  const res=await fetch(SUPABASE_URL+'/functions/v1/club-delete-member',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionData.session.access_token,'apikey':KEY},body:JSON.stringify({member_id:id})});
+  const body=await res.text();let data;try{data=JSON.parse(body)}catch{data={message:body.slice(0,180)||'서버 응답을 확인할 수 없습니다.'}}
+  if(!res.ok||data.success!==true)return alert(action+' 실패 ('+res.status+'): '+(data.message||'서버 오류'));
+  if(self){await db.auth.signOut();await refresh();switchTab('ranking');return alert('탈퇴 완료');}
+  await refresh();
+  if(members.some(m=>String(m.id)===String(id)))return alert('서버는 강퇴 성공을 반환했지만 회원 목록에 남아 있습니다. 새로고침 후 확인해 주세요.');
+  alert(displayName+' 회원 강퇴 완료. 회원 목록과 순위에서 제외됐습니다.');
+ }catch(e){alert('강퇴 요청 실패: '+e.message)}
 }
 async function changeMyPassword(){const pw=$('myNewPassword').value;if(pw.length<8)return alert('새 비밀번호는 8자 이상으로 설정하세요.');const r=await db.auth.updateUser({password:pw});if(r.error)return alert('변경 실패: '+r.error.message);$('myNewPassword').value='';alert('비밀번호가 변경됐습니다.')}
 async function deleteScoreRecord(memberId,eventId){
