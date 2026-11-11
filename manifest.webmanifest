@@ -8,10 +8,11 @@
   "theme_color": "#102b55",
   "icons": [
     {
-      "src": "./icon-1st.svg",
+      "src": "./icon-1st.svg?v=2",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
-  ]
+  ],
+  "id": "/busan-first-club/?app=1st"
 }
